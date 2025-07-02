@@ -1,4 +1,5 @@
-const express = require("express");
+import express from "express";
+import fetchData from "./data.js";
 const app = express();
 
 app.get("/", (req, res) => {
@@ -6,10 +7,9 @@ app.get("/", (req, res) => {
 });
 
 app.get("/data", async (req, res) => {
-  const fetchData = require("./data").default;
   try {
-    const data = await fetchData();
-    res.json(data);
+    const pollutantId = ["PM10", "PM2.5", "NO2", "SO2", "CO", "OZONE", "NH3"];
+    
   } catch (err) {
     console.error("Error fetching data:", err);
     res.status(500).send("Internal Server Error");

@@ -1,17 +1,23 @@
-require("dotenv").config();
+import dotenv from "dotenv";
+import fetch from "node-fetch";
 
-AQI_API_KEY = process.env.AQI_API_KEY;
-//console.log(AQI_API_KEY);
+dotenv.config();
 
-let URL = `https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69?api-key=${AQI_API_KEY}&format=json&limit=1000&filters%5Bcountry%5D=India&filters%5Bpollutant_id%5D=PM10`;
+const AQI_API_KEY = process.env.AQI_API_KEY;
 
-async function fetchData() {
+function fetchURL(pollutant_id) {
+  return `https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69?api-key=${AQI_API_KEY}&format=json&limit=1000&filters%5Bcountry%5D=India&filters%5Bpollutant_id%5D=${pollutant_id}`;
+}
+
+async function fetchData(pollutant_id) {
   try {
-    const response = await fetch(URL);
+    const aqiURL = fetchURL(pollutant_id);
+    const response = await fetch(aqiURL);
     const data = await response.json();
     return data.records;
   } catch (err) {
     console.log("Error: ", err);
+    throw err;
   }
 }
 
