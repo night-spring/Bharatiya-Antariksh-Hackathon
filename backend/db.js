@@ -11,11 +11,29 @@ const sql = postgres(connectionString, {
 
 const pollutantId = ["PM2.5", "PM10", "NO2", "SO2", "CO", "OZONE", "NH3"];
 
+
 function formatTime(datetime) {
     const [day, month, rest] = datetime.split('-');
     const [year, time] = rest.split(' ');
-    return `${year}-${month}-${day}T${time}Z`; // UTC
-}
+    return `${year}-${month}-${day}T${time}Z`;
+};
+
+
+async function getStationId(record) {
+    const station_id = await sql`
+        SELECT id FROM stations WHERE
+        country = ${record.country} AND
+        state = ${record.state} AND
+        city = ${record.city} AND
+        station = ${record.station} AND
+        latitude = ${record.latitude} AND
+        longitude = ${record.longitude}`;
+    
+    if (station_id.length != 0) {
+        return station_id;
+    }
+    return [];
+};
 
 
 async function fetchPM(){
@@ -30,14 +48,7 @@ async function fetchPM(){
                 continue;
             }
 
-            let station_id = await sql`
-                SELECT id FROM stations WHERE
-                country = ${record.country} AND
-                state = ${record.state} AND
-                city = ${record.city} AND
-                station = ${record.station} AND
-                latitude = ${record.latitude} AND
-                longitude = ${record.longitude}`
+            let station_id = await getStationId(record);
 
             if (station_id.length != 0) {
                 await sql `UPDATE pollutants
@@ -53,9 +64,11 @@ async function fetchPM(){
     }
 };
 
+
 async function fetchAndStoreData(){
-    await fetchPM();
     try {
+        await fetchPM();
+
         for (const pollutant of pollutantId.slice(1, pollutantId.length)) {
             const records = await fetchData(pollutant);
             if (!records || records.length === 0) {
@@ -68,14 +81,7 @@ async function fetchAndStoreData(){
                     continue;
                 }
 
-                let station_id = await sql`
-                    SELECT id FROM stations WHERE
-                    country = ${record.country} AND
-                    state = ${record.state} AND
-                    city = ${record.city} AND
-                    station = ${record.station} AND
-                    latitude = ${record.latitude} AND
-                    longitude = ${record.longitude}`;
+                let station_id = await getStationId(record);
 
                 if (station_id.length !== 0) {
                     await sql`UPDATE pollutants
@@ -91,4 +97,5 @@ async function fetchAndStoreData(){
     }
 }
 
-fetchAndStoreData();
+
+export default fetchAndStoreData;
