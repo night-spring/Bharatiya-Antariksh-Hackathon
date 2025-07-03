@@ -1,7 +1,7 @@
-//import express from "express";
 const express = require("express");
-//import fetchData from "./data.js";
+const cron = require("node-cron");
 const fetchData = require("./data.js");
+const {fetchAndStoreData, allStations} = require("./db.js");
 
 const path = require("path");
 const app = express();
@@ -9,21 +9,43 @@ const app = express();
 // app.get("/", (req, res) => {
 //   res.send("working");
 // });
-app.use(express.static(path.join(__dirname, '../frontend/public')));
+app.use(express.static(path.join(__dirname, "../frontend/public")));
+
+// Server start-up data fetch and store
+// (async () => {
+//   try {
+//   await fetchAndStoreData();
+//     console.log("Initial data fetch and store completed successfully");
+//   } catch (err) {
+//     console.error("Error during initial data fetch and store:", err);
+//   }
+// })();
+
+// // Schedule a cron job to fetch and store data every hour
+// cron.schedule("1 * * * *", async () => {
+//   console.log("Running cron job to fetch and store data");
+//   await fetchAndStoreData()
+//     .then(() => {
+//       console.log("Data fetched and stored successfully");
+//     })
+//     .catch((err) => {
+//       console.error("Error :", err);
+//     });
+// });
+
 
 // Home route
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/public/index.html'));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/public/index.html"));
 });
-
 
 app.get("/data", async (req, res) => {
   try {
-    const pollutantId = ["PM10", "PM2.5", "NO2", "SO2", "CO", "OZONE", "NH3"];
-    
+    let allStationsData = await allStations();
+    res.json(allStationsData);
   } catch (err) {
-    console.error("Error fetching data:", err);
-    res.status(500).send("Internal Server Error");
+    console.error("Error fetching all stations data:", err);
+    res.status(500).json({ error: "Failed to fetch data" });
   }
 });
 

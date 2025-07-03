@@ -1,6 +1,6 @@
-import postgres from "postgres";
-import dotenv from "dotenv";
-import fetchData from "./data.js";
+const postgres = require("postgres");
+const dotenv = require("dotenv");
+const fetchData = require("./data.js");
 
 dotenv.config();
 
@@ -97,5 +97,14 @@ async function fetchAndStoreData(){
     }
 }
 
+async function allStations() {
+    try {
+        const stations = await sql`SELECT * FROM stations`;
+        return stations;
+    } catch (error) {
+        console.error("Error fetching all stations:", error);
+        throw error;
+    }
+}
 
-export default fetchAndStoreData;
+module.exports = {fetchAndStoreData, allStations};
