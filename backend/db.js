@@ -107,4 +107,14 @@ async function allStations() {
     }
 }
 
-module.exports = {fetchAndStoreData, allStations};
+async function allPollutants(){
+    try {
+        const pollutants = await sql`SELECT * FROM pollutants`;
+        return pollutants;
+    } catch (error) {
+        console.error("Error fetching pollutants:", error);
+        throw error;
+    }
+}
+
+module.exports = {fetchAndStoreData, allStations, allPollutants};

@@ -1,7 +1,7 @@
 const express = require("express");
 const cron = require("node-cron");
 const fetchData = require("./data.js");
-const {fetchAndStoreData, allStations} = require("./db.js");
+const {fetchAndStoreData, allStations, allPollutants} = require("./db.js");
 
 const path = require("path");
 const app = express();
@@ -42,11 +42,13 @@ app.get("/", (req, res) => {
 app.get("/data", async (req, res) => {
   try {
     let allStationsData = await allStations();
-    res.json(allStationsData);
+    let allPollutantsData = await allPollutants();
+    res.send("data fetched successfully");
   } catch (err) {
-    console.error("Error fetching all stations data:", err);
+    console.error("Error fetching data:", err);
     res.status(500).json({ error: "Failed to fetch data" });
   }
+
 });
 
 app.listen(8080, () => {
