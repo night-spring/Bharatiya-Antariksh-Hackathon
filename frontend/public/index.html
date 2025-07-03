@@ -1,25 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Place to Coordinates</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoFinder - Responsive Location Finder</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <h2>Search a Place and Show on Map</h2>
+<body class="dark-mode">
+  <div class="container">
+    <header>
+      <div class="logo">
+        <i class="fas fa-map-marker-alt"></i>
+        <span>GeoFinder</span>
+      </div>
+      <div class="header-actions">
+        <div class="theme-toggle" id="themeToggle">
+          <i class="fas fa-moon"></i>
+        </div>
+      </div>
+    </header>
 
-  <div class="search-box">
-    <input type="text" id="placeInput" placeholder="Enter place (e.g., Mumbai)" />
-    <button onclick="searchPlace()">Search</button>
+    <h1 class="app-title">Discover Any Place on Earth</h1>
+    <p class="app-subtitle">Search for any location worldwide and instantly view its coordinates on an interactive map</p>
+
+    <div class="main-content">
+      <div class="panel search-container">
+        <div class="search-box">
+          <h3><i class="fas fa-search"></i> Search for a location</h3>
+          <div class="input-group">
+            <input type="text" id="placeInput" placeholder="Enter a city, landmark or address...">
+            <button class="search-btn" onclick="searchPlace()">
+              <i class="fas fa-search"></i> Search
+            </button>
+          </div>
+          <div class="loading" id="loading">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <div class="coordinates-card">
+          <h3><i class="fas fa-location-dot"></i> Coordinates</h3>
+          <div class="coordinates-display">
+            <div class="coordinate pulse">
+              <div class="coordinate-label">
+                <i class="fas fa-globe-americas"></i>
+                <span>LATITUDE</span>
+              </div>
+              <div class="coordinate-value" id="lat">-</div>
+            </div>
+            <div class="coordinate pulse">
+              <div class="coordinate-label">
+                <i class="fas fa-globe-americas"></i>
+                <span>LONGITUDE</span>
+              </div>
+              <div class="coordinate-value" id="lon">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="location-info">
+          <div class="location-name">Search for a location to see details</div>
+          <div class="location-type">Location details will appear here</div>
+        </div>
+
+        <div class="recent-searches">
+          <h4><i class="fas fa-clock-rotate-left"></i> Popular Locations</h4>
+          <div class="recent-list">
+            <div class="recent-item" onclick="searchRecent('Eiffel Tower')">Eiffel Tower</div>
+            <div class="recent-item" onclick="searchRecent('Statue of Liberty')">Statue of Liberty</div>
+            <div class="recent-item" onclick="searchRecent('Taj Mahal')">Taj Mahal</div>
+            <div class="recent-item" onclick="searchRecent('Great Wall of China')">Great Wall</div>
+            <div class="recent-item" onclick="searchRecent('Santorini')">Santorini</div>
+            <div class="recent-item" onclick="searchRecent('Machu Picchu')">Machu Picchu</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel map-container">
+        <h3><i class="fas fa-map"></i> Interactive Map</h3>
+        <div id="map"></div>
+        <div class="map-controls">
+          <button class="map-btn" onclick="locateUser()">
+            <i class="fas fa-location-crosshairs"></i> My Location
+          </button>
+          <button class="map-btn" onclick="resetMap()">
+            <i class="fas fa-globe-americas"></i> Reset View
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>© 2023 GeoFinder - Find any place on Earth with pinpoint accuracy</p>
+      <p>Powered by OpenStreetMap & Leaflet.js</p>
+    </footer>
   </div>
 
-  <div class="coordinates">
-    <p><strong>Latitude:</strong> <span id="lat">-</span></p>
-    <p><strong>Longitude:</strong> <span id="lon">-</span></p>
+  <div class="notification" id="notification">
+    <i class="fas fa-check-circle"></i>
+    <span>Location found successfully!</span>
   </div>
-
-  <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="script.js"></script>
