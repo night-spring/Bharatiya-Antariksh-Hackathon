@@ -1,5 +1,8 @@
-import dotenv from "dotenv";
-import fetch from "node-fetch";
+//import dotenv from "dotenv";
+const dotenv = require("dotenv");
+//import fetch from "node-fetch";
+//const fetch = require("node-fetch");
+const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 
 dotenv.config();
 
@@ -23,4 +26,5 @@ async function fetchData(pollutant_id) {
   }
 }
 
-export default fetchData;
+//export default fetchData;
+module.exports = fetchData;
