@@ -1,0 +1,32 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 0;
+}
+
+.search-box {
+  margin: 20px;
+}
+
+#placeInput {
+  padding: 8px;
+  width: 250px;
+  font-size: 16px;
+}
+
+button {
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.coordinates {
+  margin: 10px 0;
+}
+
+#map {
+  height: 80vh;
+  width: 90vw;
+  margin: 0 auto;
+  border: 2px solid #444;
+}

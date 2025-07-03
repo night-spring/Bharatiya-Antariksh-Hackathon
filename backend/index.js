@@ -1,10 +1,21 @@
-import express from "express";
-import fetchData from "./data.js";
+//import express from "express";
+const express = require("express");
+//import fetchData from "./data.js";
+const fetchData = require("./data.js");
+
+const path = require("path");
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("working");
+// app.get("/", (req, res) => {
+//   res.send("working");
+// });
+app.use(express.static(path.join(__dirname, '../frontend/public')));
+
+// Home route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/public/index.html'));
 });
+
 
 app.get("/data", async (req, res) => {
   try {
