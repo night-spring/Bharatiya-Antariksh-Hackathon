@@ -22,6 +22,8 @@ class _HomePageState extends State<HomePage> {
   String _locationName = "Searching...";
   final TextEditingController _searchController = TextEditingController();
   final MapController _mapController = MapController();
+  final MapController _heatmapMapController =
+      MapController(); // Separate controller for heatmap
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
   bool _isLoadingAirData = false;
@@ -32,6 +34,25 @@ class _HomePageState extends State<HomePage> {
     'factories': 60,
     'wildfires': 15,
   };
+
+  // Heatmap data for Indian cities
+  final List<Map<String, dynamic>> _heatmapData = [
+    {'name': 'Delhi', 'aqi': 420, 'lat': 28.6139, 'lon': 77.2090},
+    {'name': 'Mumbai', 'aqi': 320, 'lat': 19.0760, 'lon': 72.8777},
+    {'name': 'Kolkata', 'aqi': 280, 'lat': 22.5726, 'lon': 88.3639},
+    {'name': 'Chennai', 'aqi': 180, 'lat': 13.0827, 'lon': 80.2707},
+    {'name': 'Bengaluru', 'aqi': 90, 'lat': 12.9716, 'lon': 77.5946},
+    {'name': 'Hyderabad', 'aqi': 110, 'lat': 17.3850, 'lon': 78.4867},
+    {'name': 'Ahmedabad', 'aqi': 380, 'lat': 23.0225, 'lon': 72.5714},
+    {'name': 'Pune', 'aqi': 120, 'lat': 18.5204, 'lon': 73.8567},
+    {'name': 'Jaipur', 'aqi': 280, 'lat': 26.9124, 'lon': 75.7873},
+    {'name': 'Lucknow', 'aqi': 360, 'lat': 26.8467, 'lon': 80.9462},
+    {'name': 'Chandigarh', 'aqi': 180, 'lat': 30.7333, 'lon': 76.7794},
+    {'name': 'Bhopal', 'aqi': 210, 'lat': 23.2599, 'lon': 77.4126},
+    {'name': 'Patna', 'aqi': 340, 'lat': 25.5941, 'lon': 85.1376},
+    {'name': 'Kochi', 'aqi': 70, 'lat': 9.9312, 'lon': 76.2673},
+    {'name': 'Shimla', 'aqi': 35, 'lat': 31.1048, 'lon': 77.1734},
+  ];
 
   @override
   void initState() {
@@ -205,7 +226,12 @@ class _HomePageState extends State<HomePage> {
       body: Stack(
         children: [
           _buildNebulaBackground(),
-          _currentIndex == 0 ? _buildDashboardContent() : _buildMapContent(),
+          if (_currentIndex == 0)
+            _buildDashboardContent()
+          else if (_currentIndex == 1)
+            _buildMapContent()
+          else
+            _buildHeatmapContent(),
         ],
       ),
       bottomNavigationBar: _buildSpaceNavBar(),
@@ -275,6 +301,161 @@ class _HomePageState extends State<HomePage> {
         ),
       ],
     );
+  }
+
+  Widget _buildHeatmapContent() {
+    return Stack(
+      children: [
+        _buildNebulaBackground(),
+        FlutterMap(
+          mapController: _heatmapMapController,
+          options: MapOptions(
+            center: const LatLng(22.0, 79.0), // Center of India
+            zoom: 5.0, // Zoom level to show entire India
+            interactiveFlags: InteractiveFlag.none, // Disable zoom/pan
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.example.app',
+            ),
+            MarkerLayer(
+              markers: _heatmapData.map((location) {
+                return Marker(
+                  point: LatLng(location['lat'], location['lon']),
+                  width: 40,
+                  height: 40,
+                  child: GestureDetector(
+                    onTap: () => _handleHeatmapTap(location),
+                    child: Container(
+                      width: _getMarkerSize(location['aqi']),
+                      height: _getMarkerSize(location['aqi']),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _getAqiColor(location['aqi'].toDouble())
+                            .withOpacity(0.7),
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _getAqiColor(location['aqi'].toDouble())
+                                .withOpacity(0.5),
+                            blurRadius: 10,
+                            spreadRadius: 3,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          location['aqi'].toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        Positioned(
+          bottom: 20,
+          left: 0,
+          right: 0,
+          child: _buildHeatmapLegend(),
+        ),
+      ],
+    );
+  }
+
+  void _handleHeatmapTap(Map<String, dynamic> location) {
+    // Update the app's current location to the tapped location
+    final latLng = LatLng(location['lat'], location['lon']);
+    _handleLocationChange(latLng);
+
+    // Show location details
+    _showLocationDetails(location);
+  }
+
+  double _getMarkerSize(int aqi) {
+    // Scale marker size based on AQI
+    return 25.0 + (aqi / 10);
+  }
+
+  void _showLocationDetails(Map<String, dynamic> location) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black.withOpacity(0.9),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.tealAccent),
+        ),
+        title: Text(
+          location['name'],
+          style: const TextStyle(color: Colors.tealAccent),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "AQI: ${location['aqi']}",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: _getAqiColor(location['aqi'].toDouble()),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _getAqiStatus(location['aqi'].toDouble()),
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 15),
+            Text(
+              _getHealthImpact(location['aqi'].toDouble()),
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 15),
+            Text(
+              "Recommended Actions:",
+              style: TextStyle(
+                color: Colors.tealAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            ..._generateHealthTips(location['aqi'].toDouble()),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "CLOSE",
+              style: TextStyle(color: Colors.tealAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getHealthImpact(double aqi) {
+    if (aqi < 50) return "Minimal health impact";
+    if (aqi < 100) return "Minor breathing discomfort to sensitive people";
+    if (aqi < 200)
+      return "Breathing discomfort to people with lung/heart conditions";
+    if (aqi < 300)
+      return "Breathing discomfort to most people on prolonged exposure";
+    if (aqi < 400) return "Respiratory illness on prolonged exposure";
+    return "Affects healthy people and seriously impacts those with existing diseases";
   }
 
   Widget _buildMapSearchBar() {
@@ -721,6 +902,68 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildHeatmapLegend() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.tealAccent.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            "AQI SCALE",
+            style: TextStyle(color: Colors.tealAccent, fontSize: 16),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 5,
+            children: [
+              _buildLegendItem("0-50", "Good", const Color(0xFF00B050)),
+              _buildLegendItem(
+                  "51-100", "Satisfactory", const Color(0xFF92D050)),
+              _buildLegendItem("101-200", "Moderate", const Color(0xFFFFFF00)),
+              _buildLegendItem("201-300", "Poor", const Color(0xFFFF9900)),
+              _buildLegendItem("301-400", "Very Poor", const Color(0xFFFF0000)),
+              _buildLegendItem("401-500", "Severe", const Color(0xFFC00000)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String range, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            "$range: $label",
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSpaceNavBar() {
     return Container(
       decoration: BoxDecoration(
@@ -750,23 +993,29 @@ class _HomePageState extends State<HomePage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.public), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Orbit Map'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.whatshot), label: 'AQI Heatmap'),
         ],
       ),
     );
   }
 
   Color _getAqiColor(double aqi) {
-    if (aqi < 50) return Colors.green;
-    if (aqi < 100) return Colors.yellow;
-    if (aqi < 150) return Colors.orange;
-    return Colors.red;
+    if (aqi < 50) return const Color(0xFF00B050);
+    if (aqi < 100) return const Color(0xFF92D050);
+    if (aqi < 200) return const Color(0xFFFFFF00);
+    if (aqi < 300) return const Color(0xFFFF9900);
+    if (aqi < 400) return const Color(0xFFFF0000);
+    return const Color(0xFFC00000);
   }
 
   String _getAqiStatus(double aqi) {
     if (aqi < 50) return "GOOD";
-    if (aqi < 100) return "MODERATE";
-    if (aqi < 150) return "UNHEALTHY";
-    return "HAZARDOUS";
+    if (aqi < 100) return "SATISFACTORY";
+    if (aqi < 200) return "MODERATE";
+    if (aqi < 300) return "POOR";
+    if (aqi < 400) return "VERY POOR";
+    return "SEVERE";
   }
 
   List<Widget> _generateHealthTips(double aqi) {
