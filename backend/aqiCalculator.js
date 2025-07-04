@@ -1,5 +1,3 @@
-// aqiCalculator.js
-
 const breakpoints = {
   pm2_5: [ { bpL: 0, bpH: 30, iL: 0, iH: 50 }, { bpL: 31, bpH: 60, iL: 51, iH: 100 }, { bpL: 61, bpH: 90, iL: 101, iH: 200 }, { bpL: 91, bpH: 120, iL: 201, iH: 300 }, { bpL: 121, bpH: 250, iL: 301, iH: 400 }, { bpL: 251, bpH: 500, iL: 401, iH: 500 } ],
   pm10:  [ { bpL: 0, bpH: 50, iL: 0, iH: 50 }, { bpL: 51, bpH: 100, iL: 51, iH: 100 }, { bpL: 101, bpH: 250, iL: 101, iH: 200 }, { bpL: 251, bpH: 350, iL: 201, iH: 300 }, { bpL: 351, bpH: 430, iL: 301, iH: 400 }, { bpL: 431, bpH: 500, iL: 401, iH: 500 } ],
@@ -37,7 +35,7 @@ function calculateAQI(data) {
   let dominantPollutant = "";
 
   pollutants.forEach(p => {
-    const val = data[p];
+    const val = parseFloat(data[p]);
     const subIndex = getSubIndex(val, p);
     if (subIndex !== null && subIndex > maxAQI) {
       maxAQI = subIndex;
@@ -46,7 +44,6 @@ function calculateAQI(data) {
   });
 
   return {
-    id: data.id,
     station_id: data.station_id,
     time: data.time,
     aqi: Math.round(maxAQI),
@@ -55,6 +52,4 @@ function calculateAQI(data) {
   };
 }
 
-if (typeof module !== 'undefined') {
-  module.exports = { calculateAQI };
-}
+module.exports = { calculateAQI };
