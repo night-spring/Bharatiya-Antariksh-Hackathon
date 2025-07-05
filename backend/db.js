@@ -1,6 +1,5 @@
 const postgres = require("postgres");
 const dotenv = require("dotenv");
-const fetchData = require("./data.js");
 const { calculateAQI } = require("./aqiCalculator.js");
 
 dotenv.config();
@@ -13,13 +12,13 @@ const sql = postgres(connectionString, {
 const pollutantId = ["PM2.5", "PM10", "NO2", "SO2", "CO", "OZONE", "NH3"];
 
 function formatTime(datetime) {
-  const [day, month, rest] = datetime.split("-");
-  const [year, time] = rest.split(" ");
-  return `${year}-${month}-${day}T${time}Z`;
+  let [day, month, rest] = datetime.split("-");
+  let [year, time] = rest.split(" ");
+  return `${year}-${month}-${day} ${time}`;
 }
 
 async function getStationId(record) {
-  const station_id = await sql`
+  let station_id = await sql`
         SELECT id FROM stations WHERE
         country = ${record.country} AND
         state = ${record.state} AND
@@ -34,70 +33,55 @@ async function getStationId(record) {
   return [];
 }
 
-async function fetchPM() {
-  try {
-    const records = await fetchData(pollutantId[0]);
-    if (!records && records.length == 0) {
-      throw new Error("No PM2.5 data found");
-    }
-
-    for (const record of records) {
-      if (record.avg_value === "NA") {
-        continue;
-      }
-
-      let station_id = await getStationId(record);
-
-      if (station_id.length != 0) {
-        await sql`UPDATE pollutants
-                    SET pm2_5 = ${record.avg_value}, 
-                    time = ${formatTime(record.last_update)}
-                    WHERE station_id = ${station_id[0].id}`;
+async function addNewStation(records){
+  try{
+    for (let i=0; i < records.length; i++){
+      for (let record of records[i]) {
+        let stationId = await getStationId(record);
+        if (stationId.length === 0) {
+          await sql`INSERT INTO stations
+                        (country, state, city, station, latitude, longitude)
+                        VALUES (${record.country}, ${record.state}, ${record.city}, ${record.station}, ${record.latitude}, ${record.longitude})`;
+        } 
       }
     }
   } catch (error) {
-    console.error("Error fetching PM2.5 data:", error);
+    console.error("Error adding new stations:", error);
     throw error;
   }
 }
 
-async function fetchAndStoreData() {
+async function storePollutantData(records) {
+  await addNewStation(records);
   try {
-    await fetchPM();
-
-    for (const pollutant of pollutantId.slice(1, pollutantId.length)) {
-      const records = await fetchData(pollutant);
-      if (!records || records.length === 0) {
-        console.warn(`No data found for ${pollutant}`);
-        continue;
-      }
-
-      for (const record of records) {
+    for (let i = 0; i < records.length; i++) {
+      for (let record of records[i]) {
         if (record.avg_value === "NA") {
           continue;
         }
 
         let station_id = await getStationId(record);
-
-        if (station_id.length !== 0) {
-          await sql`UPDATE pollutants
-                        SET ${sql(pollutant.toLowerCase())} = ${
-            record.avg_value
-          }
-                        WHERE station_id = ${station_id[0].id}
-                        AND time = ${formatTime(record.last_update)}`;
+        let pollutant = pollutantId[i].toLowerCase();
+        if (pollutant==="pm2.5"){
+          pollutant = "pm2_5";
         }
+        await sql`INSERT INTO pollutants (station_id, ${sql(pollutant)}, time)
+                  VALUES (${station_id[0].id}, ${record.avg_value}, ${formatTime(record.last_update)})
+                  ON CONFLICT (station_id)
+                  DO UPDATE SET
+                    ${sql(pollutant)} = EXCLUDED.${sql(pollutant)},
+                    time = EXCLUDED.time;`;
       }
     }
   } catch (error) {
-    console.error("Error fetching and storing data:", error);
+    console.error("Error storing data:", error);
     throw error;
   }
 }
 
 async function allStations() {
   try {
-    const stations = await sql`SELECT * FROM stations`;
+    let stations = await sql`SELECT * FROM stations`;
     return stations;
   } catch (error) {
     console.error("Error fetching all stations:", error);
@@ -107,7 +91,7 @@ async function allStations() {
 
 async function allPollutants() {
   try {
-    const pollutants = await sql`SELECT * FROM pollutants`;
+    let pollutants = await sql`SELECT * FROM pollutants`;
     return pollutants;
   } catch (error) {
     console.error("Error fetching pollutants:", error);
@@ -115,9 +99,41 @@ async function allPollutants() {
   }
 }
 
+async function computeAQI() {
+  try {
+    let pollutantData = await allPollutants();
+    console.log(pollutantData.slice(0, 5)); 
+    let results = pollutantData.map((row) => calculateAQI(row));
+    return results;
+  } catch (err) {
+    console.error("❌ Error calculating AQI:", err);
+    return []; // Return empty array instead of undefined
+  }
+}
+
+async function storeAQIData() {
+  try {
+    let aqiData = await computeAQI();
+    for (let record of aqiData) {
+      await sql` INSERT INTO aqitable
+                    (station_id, aqi, time, category, dominant_pollutant)
+                  VALUES (${record.station_id}, ${record.aqi}, ${record.time}, ${record.category}, ${record.dominantPollutant})
+                  ON CONFLICT (station_id)
+                  DO UPDATE SET
+                    aqi = EXCLUDED.aqi,
+                    time = EXCLUDED.time,
+                    category = EXCLUDED.category,
+                    dominant_pollutant = EXCLUDED.dominant_pollutant;`;
+    }
+  } catch (error) {
+    console.error("Error storing AQI data:", error);
+    throw error;
+  }
+}
+
 async function allAQI() {
   try {
-    const aqiData = await sql`
+    let aqiData = await sql`
       SELECT 
         aqitable.station_id, 
         aqitable.time, 
@@ -136,35 +152,10 @@ async function allAQI() {
   }
 }
 
-async function computeAQI() {
-  try {
-    const pollutantData = await allPollutants();
-    const results = pollutantData.map((row) => calculateAQI(row));
-    return results;
-  } catch (err) {
-    console.error("❌ Error calculating AQI:", err);
-    return []; // Return empty array instead of undefined
-  }
-}
-
-async function storeAQIData() {
-  try {
-    let aqiData = await computeAQI();
-    for (const record of aqiData) {
-      await sql`INSERT INTO aqitable
-                    (station_id, aqi, time, category, dominant_pollutant)
-                    VALUES (${record.station_id}, ${record.aqi}, ${record.time}, ${record.category}, ${record.dominantPollutant})`;
-    }
-  } catch (error) {
-    console.error("Error storing AQI data:", error);
-    throw error;
-  }
-}
-
 module.exports = {
-  fetchAndStoreData,
-  storeAQIData,
+  storePollutantData,
   allStations,
   allPollutants,
+  storeAQIData,
   allAQI,
 };

@@ -1,57 +1,50 @@
 const express = require("express");
 const cron = require("node-cron");
 const fetchData = require("./data.js");
-const {
-  fetchAndStoreData,
-  storeAQIData,
-  allStations,
-  allPollutants,
-  allAQI,
-} = require("./db.js");
-const computeAQI = require("./computeAQI.js");
+const { storePollutantData, storeAQIData, allAQI } = require("./db.js");
 
 const path = require("path");
 const app = express();
 
-// app.get("/", (req, res) => {
-//   res.send("working");
-// });
 app.use(express.static(path.join(__dirname, "../frontend/public")));
 
-// Server start-up data fetch and store
-// (async () => {
-//   try {
-//     console.log("Initial pollutant data fetch!");
-//     await fetchAndStoreData();
-//     console.log("Initial data fetch and store completed successfully");
-//   } catch (err) {
-//     console.error("Error during initial data fetch and store:", err);
-//   }
+app.listen(8080, () => {
+  console.log("server is listening on port 8080");
+});
 
-//   try {
-//     console.log("Initial aqi data fetch!");
-//     await storeAQIData();
-//     console.log("Initial AQI computation completed successfully");
-//   } catch (err) {
-//     console.error("Error during initial AQI computation:", err);
-//   }
-// })();
+
+// Server start-up data fetch and store
+(async () => {
+  try {
+    console.log("Initial data fetch and store starting ...");
+
+    let data = await fetchData();
+    console.log("Initial pollutant data fetch completed successfully");
+
+    await storePollutantData(data);
+    console.log("Pollutant data stored successfully");
+
+    await storeAQIData();
+    console.log("AQI data stored successfully");
+  } catch (err) {
+    console.error("Error during initial pollutant data fetch :", err);
+  }
+})();
 
 // Schedule a cron job to fetch and store data every hour
 cron.schedule("1 * * * *", async () => {
   console.log("Running cron job!");
   try {
-    await fetchAndStoreData();
-    console.log("Pollutant data fetch and store completed successfully");
-  } catch (err) {
-    console.error("Error during pollutant data fetch and store:", err);
-  }
+    let data = await fetchData();
+    console.log("Pollutant data fetch completed successfully");
 
-  try {
+    await storePollutantData(data);
+    console.log("Pollutant data stored successfully");
+
     await storeAQIData();
-    console.log("AQI computation completed successfully");
+    console.log("AQI data stored successfully");
   } catch (err) {
-    console.error("Error during AQI computation:", err);
+    console.error("Error during pollutant data fetch :", err);
   }
 });
 
@@ -68,8 +61,4 @@ app.get("/api/aqidata", async (req, res) => {
     console.error("Error fetching AQI data:", err);
     res.status(500).json({ error: "Failed to fetch AQI data" });
   }
-});
-
-app.listen(8080, () => {
-  console.log("server is listening on port 8080");
 });
