@@ -10,6 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^17.0.0",
     "express": "^5.1.0",
     "node-cron": "^4.2.0",

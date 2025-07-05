@@ -1,5 +1,6 @@
 const postgres = require("postgres");
 const dotenv = require("dotenv");
+
 const { calculateAQI } = require("./aqiCalculator.js");
 
 dotenv.config();
