@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 
@@ -43,7 +44,8 @@ class AqiDataPoint {
         dominantPollutant: json['dominant_pollutant']?.toString() ?? 'unknown',
       );
     } catch (e) {
-      print('Error parsing AQI data point: $e');
+      developer.log('Error parsing AQI data point: $e',
+          name: 'AqiDataPoint.fromJson');
       return AqiDataPoint(
         stationId: 'error',
         time: DateTime.now(),
@@ -104,7 +106,7 @@ class _HomePageState extends State<HomePage> {
   bool _isSearching = false;
   bool _isLoadingAirData = false;
   bool _isLoadingApiData = false;
-  Map<String, dynamic> _airPollutionData = {};
+  // Map<String, dynamic> _airPollutionData = {}; // Removed unused field
   List<Map<String, dynamic>> _forecastData = [];
   Map<String, double> _pollutionSources = {
     'traffic': 35,
@@ -362,7 +364,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      print('Fetching AQI data from API...');
+      developer.log('Fetching AQI data from API...', name: '_fetchApiAqiData');
       final List<String> apiUrls = [
         'http://localhost:8080/api/aqidata',
         'http://127.0.0.1:8080/api/aqidata',
@@ -373,7 +375,7 @@ class _HomePageState extends State<HomePage> {
 
       for (String url in apiUrls) {
         try {
-          print('Trying API URL: $url');
+          developer.log('Trying API URL: $url', name: '_fetchApiAqiData');
           response = await http.get(
             Uri.parse(url),
             headers: {
@@ -390,7 +392,8 @@ class _HomePageState extends State<HomePage> {
             break;
           }
         } catch (e) {
-          print('Failed to fetch from $url: $e');
+          developer.log('Failed to fetch from $url: $e',
+              name: '_fetchApiAqiData', error: e);
           continue;
         }
       }
@@ -400,7 +403,8 @@ class _HomePageState extends State<HomePage> {
             'All API endpoints failed. Status: ${response?.statusCode ?? 'No response'}');
       }
 
-      print('Successfully connected to: $workingUrl');
+      developer.log('Successfully connected to: $workingUrl',
+          name: '_fetchApiAqiData');
       final dynamic responseBody = json.decode(response.body);
 
       if (responseBody is List) {
@@ -416,16 +420,19 @@ class _HomePageState extends State<HomePage> {
                 fetchedData.add(dataPoint);
               } else if (dataPoint.isValid) {
                 _failedStations++;
-                print(
-                    'Data point outside India boundary: ${dataPoint.stationId} at ${dataPoint.latitude}, ${dataPoint.longitude}');
+                developer.log(
+                    'Data point outside India boundary: ${dataPoint.stationId} at ${dataPoint.latitude}, ${dataPoint.longitude}',
+                    name: '_fetchApiAqiData');
               } else {
                 _failedStations++;
-                print('Invalid data point: ${dataPoint.stationId}');
+                developer.log('Invalid data point: ${dataPoint.stationId}',
+                    name: '_fetchApiAqiData');
               }
             }
           } catch (e) {
             _failedStations++;
-            print('Error parsing individual data point: $e');
+            developer.log('Error parsing individual data point: $e',
+                name: '_fetchApiAqiData', error: e);
           }
         }
 
@@ -435,10 +442,12 @@ class _HomePageState extends State<HomePage> {
           _apiError = '';
         });
 
-        print(
-            'Successfully fetched ${_apiAqiData.length} valid AQI data points within India');
-        print(
-            'Filtered out ${_failedStations} stations (outside India or invalid)');
+        developer.log(
+            'Successfully fetched ${_apiAqiData.length} valid AQI data points within India',
+            name: '_fetchApiAqiData');
+        developer.log(
+            'Filtered out ${_failedStations} stations (outside India or invalid)',
+            name: '_fetchApiAqiData');
 
         if (_currentLocation != null &&
             _isWithinIndiaBounds(_currentLocation!)) {
@@ -461,7 +470,8 @@ class _HomePageState extends State<HomePage> {
         throw Exception('API response is not a list');
       }
     } catch (e) {
-      print('Error fetching AQI data: $e');
+      developer.log('Error fetching AQI data: $e',
+          name: '_fetchApiAqiData', error: e);
       setState(() {
         _apiError = e.toString();
       });
@@ -504,7 +514,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _loadSampleData() {
-    print('Loading sample data as fallback...');
+    developer.log('Loading sample data as fallback...',
+        name: '_loadSampleData');
     // Enhanced sample data covering more of India - all within boundaries
     List<AqiDataPoint> sampleData = [
       // North India
@@ -750,6 +761,7 @@ class _HomePageState extends State<HomePage> {
       }
 
       Position position = await Geolocator.getCurrentPosition(
+        // ignore: deprecated_member_use
         desiredAccuracy: LocationAccuracy.high,
       );
 
@@ -787,7 +799,8 @@ class _HomePageState extends State<HomePage> {
         _fetchForecastData(_currentLocation!),
       ]);
     } catch (e) {
-      print('Location error: $e');
+      developer.log('Location error: $e',
+          name: '_getCurrentLocation', error: e);
       setState(() {
         _locationName = "Location unavailable";
         _currentLocation = const LatLng(20.5937, 78.9629); // Center of India
@@ -826,7 +839,7 @@ class _HomePageState extends State<HomePage> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          _airPollutionData = data;
+          // _airPollutionData = data; // Removed unused assignment
           if (data['list'] != null && data['list'].isNotEmpty) {
             final mainData = data['list'][0]['main'];
             final components = data['list'][0]['components'];
@@ -840,7 +853,8 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print('Error fetching air pollution data: $e');
+      developer.log('Error fetching air pollution data: $e',
+          name: '_fetchAirPollutionData', error: e);
       setState(() {
         _currentAqi = _calculateInterpolatedAqi(latLng);
       });
@@ -887,7 +901,8 @@ class _HomePageState extends State<HomePage> {
         }
       }
     } catch (e) {
-      print('Error fetching forecast data: $e');
+      developer.log('Error fetching forecast data: $e',
+          name: '_fetchForecastData', error: e);
     }
   }
 
@@ -931,7 +946,7 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print('Search error: $e');
+      developer.log('Search error: $e', name: '_searchPlace', error: e);
     } finally {
       setState(() {
         _isSearching = false;
@@ -985,7 +1000,8 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      print('Reverse geocode error: $e');
+      developer.log('Reverse geocode error: $e',
+          name: '_reverseGeocode', error: e);
       setState(() {
         _locationName =
             "Location: ${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}";
@@ -1122,9 +1138,9 @@ class _HomePageState extends State<HomePage> {
                 style: const TextStyle(color: Colors.orange, fontSize: 10),
               ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               "Station Distribution:",
-              style: const TextStyle(
+              style: TextStyle(
                   color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.bold),
@@ -1152,9 +1168,9 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               "Recent Readings (Sample):",
-              style: const TextStyle(
+              style: TextStyle(
                   color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.bold),
@@ -1616,7 +1632,7 @@ class _HomePageState extends State<HomePage> {
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 );
-              }).toList(),
+              }),
             ],
             const SizedBox(height: 16),
             Text(
@@ -2293,10 +2309,12 @@ class _HomePageState extends State<HomePage> {
   String _getHealthImpact(double aqi) {
     if (aqi < 50) return "Minimal health impact";
     if (aqi < 100) return "Minor breathing discomfort to sensitive people";
-    if (aqi < 200)
+    if (aqi < 200) {
       return "Breathing discomfort to people with lung/heart conditions";
-    if (aqi < 300)
+    }
+    if (aqi < 300) {
       return "Breathing discomfort to most people on prolonged exposure";
+    }
     if (aqi < 400) return "Respiratory illness on prolonged exposure";
     return "Affects healthy people and seriously impacts those with existing diseases";
   }

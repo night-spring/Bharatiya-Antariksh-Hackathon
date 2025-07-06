@@ -1,4 +1,4 @@
-name: aqi_monitor
+name: app
 description: "A Flutter AQI monitoring application with space theme and real-time air quality data."
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
