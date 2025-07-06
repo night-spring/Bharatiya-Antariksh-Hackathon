@@ -31,32 +31,8 @@ const breakpoints = {
     { bpL: 801, bpH: 1600, iL: 301, iH: 400 },
     { bpL: 1601, bpH: 2000, iL: 401, iH: 500 },
   ],
-  co: [
-    { bpL: 0, bpH: 1, iL: 0, iH: 50 },
-    { bpL: 1.1, bpH: 2, iL: 51, iH: 100 },
-    { bpL: 2.1, bpH: 10, iL: 101, iH: 200 },
-    { bpL: 10.1, bpH: 17, iL: 201, iH: 300 },
-    { bpL: 17.1, bpH: 34, iL: 301, iH: 400 },
-    { bpL: 34.1, bpH: 50, iL: 401, iH: 500 },
-  ],
-  ozone: [
-    { bpL: 0, bpH: 50, iL: 0, iH: 50 },
-    { bpL: 51, bpH: 100, iL: 51, iH: 100 },
-    { bpL: 101, bpH: 168, iL: 101, iH: 200 },
-    { bpL: 169, bpH: 208, iL: 201, iH: 300 },
-    { bpL: 209, bpH: 748, iL: 301, iH: 400 },
-    { bpL: 749, bpH: 1000, iL: 401, iH: 500 },
-  ],
-  nh3: [
-    { bpL: 0, bpH: 200, iL: 0, iH: 100 },
-    { bpL: 201, bpH: 400, iL: 101, iH: 200 },
-    { bpL: 401, bpH: 800, iL: 201, iH: 300 },
-    { bpL: 801, bpH: 1200, iL: 301, iH: 400 },
-    { bpL: 1201, bpH: 1800, iL: 401, iH: 500 },
-  ],
 };
 
-// AQI Category
 function getCategory(aqi) {
   if (aqi <= 50) return "Good";
   if (aqi <= 100) return "Satisfactory";
@@ -66,7 +42,6 @@ function getCategory(aqi) {
   return "Severe";
 }
 
-// Sub-Index Calculation
 function getSubIndex(value, pollutant) {
   if (!value || !breakpoints[pollutant]) return null;
   const bp = breakpoints[pollutant];
@@ -79,10 +54,8 @@ function getSubIndex(value, pollutant) {
   return null;
 }
 
-// Final AQI Calculation Function (CO Ignored)
 function calculateAQI(data) {
-  // ⚠️ CO removed to align with CPCB-style accurate AQI
-  const pollutants = ["pm2_5", "pm10", "no2", "so2", "ozone", "nh3"];
+  const pollutants = ["pm2_5", "pm10", "no2", "so2"]; // Only these affect AQI
   let maxAQI = -1;
   let dominantPollutant = "";
 
