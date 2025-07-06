@@ -2,13 +2,10 @@ const postgres = require("postgres");
 const dotenv = require("dotenv");
 
 const { calculateAQI } = require("./aqiCalculator.js");
-
+const sql = require("./connection.js"); 
 dotenv.config();
 
-const connectionString = process.env.DATABASE_URL;
-const sql = postgres(connectionString, {
-  ssl: "require",
-});
+
 
 const pollutantId = ["PM2.5", "PM10", "NO2", "SO2", "CO", "OZONE", "NH3"];
 
@@ -34,36 +31,33 @@ async function getStationId(record) {
   return [];
 }
 
-async function addNewStation(records){
-  try{
-    for (let i=0; i < records.length; i++){
-      for (let record of records[i]) {
-        let stationId = await getStationId(record);
-        if (stationId.length === 0) {
-          await sql`INSERT INTO stations
-                        (country, state, city, station, latitude, longitude)
-                        VALUES (${record.country}, ${record.state}, ${record.city}, ${record.station}, ${record.latitude}, ${record.longitude})`;
-        } 
-      }
-    }
-  } catch (error) {
-    console.error("Error adding new stations:", error);
-    throw error;
-  }
-}
-
 async function storePollutantData(records) {
-  await addNewStation(records);
+  try {
+    await sql`SELECT 1`;
+    console.log('✅ Database connection successful');
+  } catch (err) {
+    console.error('❌ Database connection failed:', err);
+  }
+
   try {
     for (let i = 0; i < records.length; i++) {
       for (let record of records[i]) {
         if (record.avg_value === "NA") {
           continue;
         }
+        process.stdout.write(".");
 
         let station_id = await getStationId(record);
+        if (station_id.length === 0) {
+          await sql`INSERT INTO stations
+                        (country, state, city, station, latitude, longitude)
+                        VALUES (${record.country}, ${record.state}, ${record.city}, ${record.station}, ${record.latitude}, ${record.longitude})`;
+          console.log("New station added");
+          station_id = await getStationId(record);
+        }
+
         let pollutant = pollutantId[i].toLowerCase();
-        if (pollutant==="pm2.5"){
+        if (pollutant === "pm2.5") {
           pollutant = "pm2_5";
         }
         await sql`INSERT INTO pollutants (station_id, ${sql(pollutant)}, time)
@@ -74,6 +68,7 @@ async function storePollutantData(records) {
                     time = EXCLUDED.time;`;
       }
     }
+    console.log("|");
   } catch (error) {
     console.error("Error storing data:", error);
     throw error;

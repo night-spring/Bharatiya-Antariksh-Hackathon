@@ -56,6 +56,7 @@ const breakpoints = {
   ],
 };
 
+// AQI Category
 function getCategory(aqi) {
   if (aqi <= 50) return "Good";
   if (aqi <= 100) return "Satisfactory";
@@ -65,6 +66,7 @@ function getCategory(aqi) {
   return "Severe";
 }
 
+// Sub-Index Calculation
 function getSubIndex(value, pollutant) {
   if (!value || !breakpoints[pollutant]) return null;
   const bp = breakpoints[pollutant];
@@ -77,8 +79,10 @@ function getSubIndex(value, pollutant) {
   return null;
 }
 
+// Final AQI Calculation Function (CO Ignored)
 function calculateAQI(data) {
-  const pollutants = ["pm2_5", "pm10", "no2", "so2", "co", "ozone", "nh3"];
+  // ⚠️ CO removed to align with CPCB-style accurate AQI
+  const pollutants = ["pm2_5", "pm10", "no2", "so2", "ozone", "nh3"];
   let maxAQI = -1;
   let dominantPollutant = "";
 
@@ -91,11 +95,13 @@ function calculateAQI(data) {
     }
   });
 
+  const roundedAQI = Math.round(maxAQI);
+
   return {
     station_id: data.station_id,
     time: data.time,
-    aqi: Math.round(maxAQI).toString(),
-    category: getCategory(maxAQI),
+    aqi: roundedAQI.toString(),
+    category: getCategory(roundedAQI),
     dominantPollutant,
   };
 }
