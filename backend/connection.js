@@ -14,9 +14,9 @@ async function checkConnection() {
     console.log('✅ Database connection successful');
   } catch (err) {
     console.error('❌ Database connection failed:', err);
-  } finally {
-    await sql.end({ timeout: 5 }); // optional: close connection
-  }
+  } 
 }
 
 checkConnection();
+
+module.exports = sql;
