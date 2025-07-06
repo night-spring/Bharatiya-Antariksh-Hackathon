@@ -1245,9 +1245,9 @@ class _HomePageState extends State<HomePage> {
               polygons: [
                 Polygon(
                   points: _indiaBoundary,
-                  color: Colors.tealAccent.withOpacity(0.1),
-                  borderColor: Colors.tealAccent,
-                  borderStrokeWidth: 2.0,
+                  color: Colors.transparent,
+                  borderColor: Colors.transparent,
+                  borderStrokeWidth: 0.0,
                 ),
               ],
             ),
@@ -1308,8 +1308,8 @@ class _HomePageState extends State<HomePage> {
                 Polygon(
                   points: _indiaBoundary,
                   color: Colors.transparent,
-                  borderColor: Colors.tealAccent.withOpacity(0.8),
-                  borderStrokeWidth: 2.0,
+                  borderColor: Colors.transparent,
+                  borderStrokeWidth: 0.0,
                 ),
               ],
             ),
