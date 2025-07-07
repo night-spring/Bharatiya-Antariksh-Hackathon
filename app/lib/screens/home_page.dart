@@ -4,9 +4,9 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 
 const String openWeatherApiKey = 'YOUR_API_KEY_HERE';
 
@@ -44,8 +44,9 @@ class AqiDataPoint {
         dominantPollutant: json['dominant_pollutant']?.toString() ?? 'unknown',
       );
     } catch (e) {
-      developer.log('Error parsing AQI data point: $e',
-          name: 'AqiDataPoint.fromJson');
+      if (kDebugMode) {
+        print('Error parsing AQI data point: $e');
+      }
       return AqiDataPoint(
         stationId: 'error',
         time: DateTime.now(),
@@ -106,7 +107,6 @@ class _HomePageState extends State<HomePage> {
   bool _isSearching = false;
   bool _isLoadingAirData = false;
   bool _isLoadingApiData = false;
-  // Map<String, dynamic> _airPollutionData = {}; // Removed unused field
   List<Map<String, dynamic>> _forecastData = [];
   Map<String, double> _pollutionSources = {
     'traffic': 35,
@@ -364,7 +364,9 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      developer.log('Fetching AQI data from API...', name: '_fetchApiAqiData');
+      if (kDebugMode) {
+        print('Fetching AQI data from API...');
+      }
       final List<String> apiUrls = [
         'http://localhost:8080/api/aqidata',
         'http://127.0.0.1:8080/api/aqidata',
@@ -375,7 +377,9 @@ class _HomePageState extends State<HomePage> {
 
       for (String url in apiUrls) {
         try {
-          developer.log('Trying API URL: $url', name: '_fetchApiAqiData');
+          if (kDebugMode) {
+            print('Trying API URL: $url');
+          }
           response = await http.get(
             Uri.parse(url),
             headers: {
@@ -392,8 +396,9 @@ class _HomePageState extends State<HomePage> {
             break;
           }
         } catch (e) {
-          developer.log('Failed to fetch from $url: $e',
-              name: '_fetchApiAqiData', error: e);
+          if (kDebugMode) {
+            print('Failed to fetch from $url: $e');
+          }
           continue;
         }
       }
@@ -403,8 +408,9 @@ class _HomePageState extends State<HomePage> {
             'All API endpoints failed. Status: ${response?.statusCode ?? 'No response'}');
       }
 
-      developer.log('Successfully connected to: $workingUrl',
-          name: '_fetchApiAqiData');
+      if (kDebugMode) {
+        print('Successfully connected to: $workingUrl');
+      }
       final dynamic responseBody = json.decode(response.body);
 
       if (responseBody is List) {
@@ -420,19 +426,22 @@ class _HomePageState extends State<HomePage> {
                 fetchedData.add(dataPoint);
               } else if (dataPoint.isValid) {
                 _failedStations++;
-                developer.log(
-                    'Data point outside India boundary: ${dataPoint.stationId} at ${dataPoint.latitude}, ${dataPoint.longitude}',
-                    name: '_fetchApiAqiData');
+                if (kDebugMode) {
+                  print(
+                      'Data point outside India boundary: ${dataPoint.stationId} at ${dataPoint.latitude}, ${dataPoint.longitude}');
+                }
               } else {
                 _failedStations++;
-                developer.log('Invalid data point: ${dataPoint.stationId}',
-                    name: '_fetchApiAqiData');
+                if (kDebugMode) {
+                  print('Invalid data point: ${dataPoint.stationId}');
+                }
               }
             }
           } catch (e) {
             _failedStations++;
-            developer.log('Error parsing individual data point: $e',
-                name: '_fetchApiAqiData', error: e);
+            if (kDebugMode) {
+              print('Error parsing individual data point: $e');
+            }
           }
         }
 
@@ -442,12 +451,14 @@ class _HomePageState extends State<HomePage> {
           _apiError = '';
         });
 
-        developer.log(
-            'Successfully fetched ${_apiAqiData.length} valid AQI data points within India',
-            name: '_fetchApiAqiData');
-        developer.log(
-            'Filtered out ${_failedStations} stations (outside India or invalid)',
-            name: '_fetchApiAqiData');
+        if (kDebugMode) {
+          print(
+              'Successfully fetched ${_apiAqiData.length} valid AQI data points within India');
+        }
+        if (kDebugMode) {
+          print(
+              'Filtered out $_failedStations stations (outside India or invalid)');
+        }
 
         if (_currentLocation != null &&
             _isWithinIndiaBounds(_currentLocation!)) {
@@ -470,8 +481,9 @@ class _HomePageState extends State<HomePage> {
         throw Exception('API response is not a list');
       }
     } catch (e) {
-      developer.log('Error fetching AQI data: $e',
-          name: '_fetchApiAqiData', error: e);
+      if (kDebugMode) {
+        print('Error fetching AQI data: $e');
+      }
       setState(() {
         _apiError = e.toString();
       });
@@ -514,8 +526,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _loadSampleData() {
-    developer.log('Loading sample data as fallback...',
-        name: '_loadSampleData');
+    if (kDebugMode) {
+      print('Loading sample data as fallback...');
+    }
     // Enhanced sample data covering more of India - all within boundaries
     List<AqiDataPoint> sampleData = [
       // North India
@@ -799,8 +812,9 @@ class _HomePageState extends State<HomePage> {
         _fetchForecastData(_currentLocation!),
       ]);
     } catch (e) {
-      developer.log('Location error: $e',
-          name: '_getCurrentLocation', error: e);
+      if (kDebugMode) {
+        print('Location error: $e');
+      }
       setState(() {
         _locationName = "Location unavailable";
         _currentLocation = const LatLng(20.5937, 78.9629); // Center of India
@@ -839,7 +853,6 @@ class _HomePageState extends State<HomePage> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          // _airPollutionData = data; // Removed unused assignment
           if (data['list'] != null && data['list'].isNotEmpty) {
             final mainData = data['list'][0]['main'];
             final components = data['list'][0]['components'];
@@ -853,8 +866,9 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      developer.log('Error fetching air pollution data: $e',
-          name: '_fetchAirPollutionData', error: e);
+      if (kDebugMode) {
+        print('Error fetching air pollution data: $e');
+      }
       setState(() {
         _currentAqi = _calculateInterpolatedAqi(latLng);
       });
@@ -901,8 +915,9 @@ class _HomePageState extends State<HomePage> {
         }
       }
     } catch (e) {
-      developer.log('Error fetching forecast data: $e',
-          name: '_fetchForecastData', error: e);
+      if (kDebugMode) {
+        print('Error fetching forecast data: $e');
+      }
     }
   }
 
@@ -946,7 +961,9 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      developer.log('Search error: $e', name: '_searchPlace', error: e);
+      if (kDebugMode) {
+        print('Search error: $e');
+      }
     } finally {
       setState(() {
         _isSearching = false;
@@ -1000,8 +1017,9 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      developer.log('Reverse geocode error: $e',
-          name: '_reverseGeocode', error: e);
+      if (kDebugMode) {
+        print('Reverse geocode error: $e');
+      }
       setState(() {
         _locationName =
             "Location: ${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}";
@@ -1058,9 +1076,10 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withAlpha((0.4 * 255).toInt()),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.tealAccent.withOpacity(0.3)),
+        border:
+            Border.all(color: Colors.tealAccent.withAlpha((0.3 * 255).toInt())),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1095,7 +1114,7 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.2),
+                color: Colors.orange.withAlpha((0.2 * 255).toInt()),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.orange),
               ),
@@ -1184,7 +1203,8 @@ class _HomePageState extends State<HomePage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getAqiColor(data.aqi.toDouble()).withOpacity(0.3),
+                    color: _getAqiColor(data.aqi.toDouble())
+                        .withAlpha((0.3 * 255).toInt()),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _getAqiColor(data.aqi.toDouble()),
@@ -1212,7 +1232,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withAlpha((0.2 * 255).toInt()),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color, width: 1),
       ),
@@ -1245,9 +1265,9 @@ class _HomePageState extends State<HomePage> {
               polygons: [
                 Polygon(
                   points: _indiaBoundary,
-                  color: Colors.transparent,
-                  borderColor: Colors.transparent,
-                  borderStrokeWidth: 0.0,
+                  color: Colors.tealAccent.withAlpha((0.1 * 255).toInt()),
+                  borderColor: Colors.tealAccent,
+                  borderStrokeWidth: 2.0,
                 ),
               ],
             ),
@@ -1308,8 +1328,8 @@ class _HomePageState extends State<HomePage> {
                 Polygon(
                   points: _indiaBoundary,
                   color: Colors.transparent,
-                  borderColor: Colors.transparent,
-                  borderStrokeWidth: 0.0,
+                  borderColor: Colors.tealAccent.withAlpha((0.8 * 255).toInt()),
+                  borderStrokeWidth: 2.0,
                 ),
               ],
             ),
@@ -1334,7 +1354,7 @@ class _HomePageState extends State<HomePage> {
                         boxShadow: [
                           BoxShadow(
                             color: _getAqiColor(dataPoint.aqi.toDouble())
-                                .withOpacity(0.8),
+                                .withAlpha((0.8 * 255).toInt()),
                             blurRadius: 6,
                             spreadRadius: 1,
                           ),
@@ -1396,15 +1416,7 @@ class _HomePageState extends State<HomePage> {
                 height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      aqiColor.withOpacity(0.4),
-                      aqiColor.withOpacity(0.2),
-                      aqiColor.withOpacity(0.1),
-                      Colors.transparent,
-                    ],
-                    stops: const [0.0, 0.4, 0.7, 1.0],
-                  ),
+                  color: aqiColor.withAlpha((0.15 * 255).toInt()),
                 ),
               ),
             ),
@@ -1419,9 +1431,10 @@ class _HomePageState extends State<HomePage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withAlpha((0.7 * 255).toInt()),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.tealAccent.withOpacity(0.5)),
+        border:
+            Border.all(color: Colors.tealAccent.withAlpha((0.5 * 255).toInt())),
       ),
       child: Column(
         children: [
@@ -1483,7 +1496,7 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.black.withOpacity(0.9),
+        backgroundColor: Colors.black.withAlpha((0.9 * 255).toInt()),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: Colors.tealAccent),
@@ -1574,7 +1587,7 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.black.withOpacity(0.9),
+        backgroundColor: Colors.black.withAlpha((0.9 * 255).toInt()),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: Colors.tealAccent),
@@ -1718,7 +1731,7 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   "CURRENT LOCATION (INDIA)",
                   style: TextStyle(
-                    color: Colors.tealAccent.withOpacity(0.8),
+                    color: Colors.tealAccent.withAlpha((0.8 * 255).toInt()),
                     fontSize: 12,
                     letterSpacing: 1.2,
                   ),
@@ -1740,7 +1753,7 @@ class _HomePageState extends State<HomePage> {
             onTap: _fetchApiAqiData,
             child: CircleAvatar(
               radius: 28,
-              backgroundColor: Colors.tealAccent.withOpacity(0.3),
+              backgroundColor: Colors.tealAccent.withAlpha((0.3 * 255).toInt()),
               child: _isLoadingApiData
                   ? const CircularProgressIndicator(
                       strokeWidth: 2,
@@ -1782,7 +1795,7 @@ class _HomePageState extends State<HomePage> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: planetColor.withOpacity(0.6),
+                        color: planetColor.withAlpha((0.6 * 255).toInt()),
                         blurRadius: 60,
                         spreadRadius: 20,
                       ),
@@ -1798,13 +1811,13 @@ class _HomePageState extends State<HomePage> {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        planetColor.withOpacity(0.9),
-                        planetColor.withOpacity(0.4),
+                        planetColor.withAlpha((0.9 * 255).toInt()),
+                        planetColor.withAlpha((0.4 * 255).toInt()),
                       ],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: planetColor.withOpacity(0.7),
+                        color: planetColor.withAlpha((0.7 * 255).toInt()),
                         blurRadius: 40,
                       ),
                     ],
@@ -1844,14 +1857,14 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withAlpha((0.4 * 255).toInt()),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.tealAccent.withOpacity(0.3),
+          color: Colors.tealAccent.withAlpha((0.3 * 255).toInt()),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.tealAccent.withOpacity(0.05),
+            color: Colors.tealAccent.withAlpha((0.05 * 255).toInt()),
             blurRadius: 10,
           )
         ],
@@ -1934,9 +1947,10 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withAlpha((0.4 * 255).toInt()),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.tealAccent.withOpacity(0.3)),
+        border:
+            Border.all(color: Colors.tealAccent.withAlpha((0.3 * 255).toInt())),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1968,7 +1982,7 @@ class _HomePageState extends State<HomePage> {
                       show: true,
                       gradient: LinearGradient(
                         colors: [
-                          Colors.tealAccent.withOpacity(0.3),
+                          Colors.tealAccent.withAlpha((0.3 * 255).toInt()),
                           Colors.transparent,
                         ],
                         begin: Alignment.topCenter,
@@ -2000,9 +2014,10 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withAlpha((0.4 * 255).toInt()),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.tealAccent.withOpacity(0.3)),
+        border:
+            Border.all(color: Colors.tealAccent.withAlpha((0.3 * 255).toInt())),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2027,9 +2042,10 @@ class _HomePageState extends State<HomePage> {
   Widget _buildMapSearchBar() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withAlpha((0.7 * 255).toInt()),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.tealAccent.withOpacity(0.5)),
+        border:
+            Border.all(color: Colors.tealAccent.withAlpha((0.5 * 255).toInt())),
       ),
       child: Column(
         children: [
@@ -2068,7 +2084,7 @@ class _HomePageState extends State<HomePage> {
             Container(
               constraints: const BoxConstraints(maxHeight: 200),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
+                color: Colors.black.withAlpha((0.8 * 255).toInt()),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(20),
                   bottomRight: Radius.circular(20),
@@ -2102,10 +2118,11 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildLocationCard() {
     return Card(
-      color: Colors.black.withOpacity(0.7),
+      color: Colors.black.withAlpha((0.7 * 255).toInt()),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide(color: Colors.tealAccent.withOpacity(0.5)),
+        side:
+            BorderSide(color: Colors.tealAccent.withAlpha((0.5 * 255).toInt())),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -2169,9 +2186,10 @@ class _HomePageState extends State<HomePage> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
+        color: Colors.black.withAlpha((0.8 * 255).toInt()),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.tealAccent.withOpacity(0.3)),
+        border:
+            Border.all(color: Colors.tealAccent.withAlpha((0.3 * 255).toInt())),
       ),
       child: Column(
         children: [
@@ -2218,12 +2236,7 @@ class _HomePageState extends State<HomePage> {
                 height: 12,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.orange.withOpacity(0.6),
-                      Colors.transparent,
-                    ],
-                  ),
+                  color: Colors.orange.withAlpha((0.6 * 255).toInt()),
                 ),
               ),
               const SizedBox(width: 4),
@@ -2242,7 +2255,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.7),
+        color: color.withAlpha((0.7 * 255).toInt()),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -2257,15 +2270,15 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF0A043C).withOpacity(0.95),
-            const Color(0xFF03506F).withOpacity(0.95),
+            const Color(0xFF0A043C).withAlpha((0.95 * 255).toInt()),
+            const Color(0xFF03506F).withAlpha((0.95 * 255).toInt()),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.tealAccent.withOpacity(0.2),
+            color: Colors.tealAccent.withAlpha((0.2 * 255).toInt()),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -2373,8 +2386,8 @@ class NebulaBackgroundPainter extends CustomPainter {
     final paint = Paint()
       ..shader = RadialGradient(
         colors: [
-          Colors.tealAccent.withOpacity(0.1),
-          Colors.purple.withOpacity(0.05),
+          Colors.tealAccent.withAlpha(25), // 0.1 * 255
+          Colors.purple.withAlpha(12), // 0.05 * 255
           Colors.transparent,
         ],
         stops: const [0.0, 0.5, 1.0],

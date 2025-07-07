@@ -101,67 +101,14 @@ class _SpaceSplashScreenState extends State<SpaceSplashScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Glowing Aura
-                      Container(
-                        width: 180,
-                        height: 180,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.tealAccent.withOpacity(0.3),
-                              blurRadius: 60,
-                              spreadRadius: 30,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Planet
-                      Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const RadialGradient(
-                            colors: [Color(0xFF00e5ff), Color(0xFF03506F)],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.tealAccent.withOpacity(0.4),
-                              blurRadius: 40,
-                              spreadRadius: 5,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Rotating Ring
-                      Transform.rotate(
-                        angle: -0.4,
-                        child: Container(
-                          width: 210,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.tealAccent.withOpacity(0.5),
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
-                      ),
-
-                      // App Icon
-                      const Icon(
-                        Icons.air,
-                        size: 60,
-                        color: Colors.white,
-                      ),
-                    ],
+                  // App Logo Only (no decoration, larger)
+                  SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: Image.asset(
+                      'assets/logo.png',
+                      fit: BoxFit.contain,
+                    ),
                   ),
 
                   const SizedBox(height: 40),
