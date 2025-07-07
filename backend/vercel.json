@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "bharatiya-antariksh-backend",
+  "name": "Aqi_Data_Api",
   "builds": [
     {
       "src": "index.js",
